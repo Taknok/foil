@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import math
+from decimal import Decimal, getcontext
 
 IBX = 302  #< 300 = number of surface panel nodes + 6 
 EPSILON = 1.e-6
@@ -10,9 +11,9 @@ EPSILON = 1.e-6
 #      for a 2-d array of points (x,y).   |
 # -----------------------------------------
 def scalc(x: list, y: list , s: list, n: int) -> list:
-    s[1] = 0.0
+    s[1] = Decimal("0")
     for i in range(2, n+1):
-        s[i] = s[i-1] + math.sqrt((x[i]-x[i-1])*(x[i]-x[i-1])+(y[i]-y[i-1])*(y[i]-y[i-1]))
+        s[i] = s[i-1] + ((x[i]-x[i-1])**2+(y[i]-y[i-1])**2).sqrt()
 
     return s
 
@@ -63,13 +64,13 @@ def trisol(a: list, b: list, c: list, d: list, kk: int):
 #               derivative end condition(s) are used     |
 #                                                        |
 # -------------------------------------------------------
-def splind(x: list, xs: list, s: list, n: int, xs1: int, xs2: int):
+def splind(x: list, xs: list, s: list, n: int, xs1: Decimal, xs2: Decimal):
     nmax = 600
     a = [None for i in range(601)]
     b = [None for i in range(601)]
     c = [None for i in range(601)]
-    dsm = 0
-    dsp = 0
+    dsm = Decimal("0")
+    dsp = Decimal("0")
 
     if n > nmax:
         print("splind: array overflow, increase nmax")
@@ -79,45 +80,45 @@ def splind(x: list, xs: list, s: list, n: int, xs1: int, xs2: int):
         dsm = s[i] - s[i-1]
         dsp = s[i+1] - s[i]
         b[i] = dsp
-        a[i] = 2.0*(dsm+dsp)
+        a[i] = Decimal("2.0")*(dsm+dsp)
         c[i] = dsm
-        xs[i] = 3.0*((x[i+1]-x[i])*dsm/dsp + (x[i]-x[i-1])*dsp/dsm)
+        xs[i] = Decimal("3.0")*((x[i+1]-x[i])*dsm/dsp + (x[i]-x[i-1])*dsp/dsm)
 
     if xs1 >= 998.0:
         # set zero second derivative end condition
-        a[1] = 2.0
-        c[1] = 1.0
-        xs[1] = 3.0*(x[2]-x[1]) / (s[2]-s[1])
+        a[1] = Decimal("2.0")
+        c[1] = Decimal("1.0")
+        xs[1] = Decimal("3.0")*(x[2]-x[1]) / (s[2]-s[1])
     else:
         if xs1 <= -998.0:
             # set third derivative end condition
-            a[1] = 1.0
-            c[1] = 1.0
-            xs[1] = 2.0*(x[2]-x[1]) / (s[2]-s[1])
+            a[1] = Decimal("1.0")
+            c[1] = Decimal("1.0")
+            xs[1] = Decimal("2.0")*(x[2]-x[1]) / (s[2]-s[1])
         else:
             # set specified first derivative end condition
-            a[1] = 1.0
-            c[1] = 0.0
+            a[1] = Decimal("1.0")
+            c[1] = Decimal("0.0")
             xs[1] = xs1
 
     if xs2 >= 998.0:
-        b[n] = 1.0
-        a[n] = 2.0
-        xs[n] = 3.0*(x[n]-x[n-1]) / (s[n]-s[n-1])
+        b[n] = Decimal("1.0")
+        a[n] = Decimal("2.0")
+        xs[n] = 3*(x[n]-x[n-1]) / (s[n]-s[n-1])
     else:
         if xs2 <= -998.0:
-            b[n] = 1.0
-            a[n] = 1.0
-            xs[n] = 2.0*(x[n]-x[n-1]) / (s[n]-s[n-1])
+            b[n] = Decimal("1.0")
+            a[n] = Decimal("1.0")
+            xs[n] = 2*(x[n]-x[n-1]) / (s[n]-s[n-1])
         else:
-            a[n] = 1.0
-            b[n] = 0.0
+            a[n] = Decimal("1.0")
+            b[n] = Decimal("0.0")
             xs[n] = xs2
 
     if n == 2 and xs1 <= -998.0 and xs2 <= -998.0:
-        b[n] = 1.0
-        a[n] = 2.0
-        xs[n] = 3.0*(x[n]-x[n-1]) / (s[n]-s[n-1])
+        b[n] = Decimal("1.0")
+        a[n] = Decimal("2.0")
+        xs[n] = 3*(x[n]-x[n-1]) / (s[n]-s[n-1])
 
     # solve for derivative array xs
     xs = trisol(a, b, c, xs, n)
@@ -162,7 +163,7 @@ def segspl(x: list, xs: list, s: list, n: int):
 #     at segment joints.  segment joints are    |
 #     defined by identical successive s values. |
 #------------------------------------------------
-def segspld(x: list, xs: list, s: int, n: int, xs1: int, xs2: int):
+def segspld(x: list, xs: list, s: Decimal, n: Decimal, xs1: Decimal, xs2: Decimal):
     nseg = 0
     iseg = 0
     iseg0 = 0
@@ -208,7 +209,7 @@ def deval(ss: int, x: list, xs: list, s: list, n: int):
     t = (ss - s[i-1]) / ds
     cx1 = ds*xs[i-1] - x[i] + x[i-1]
     cx2 = ds*xs[i] - x[i] + x[i-1]
-    deval = x[i] - x[i-1] + (1.0-4.0*t+3.0*t*t)*cx1 + t*(3.0*t-2.0)*cx2
+    deval = x[i] - x[i-1] + (1-4*t+3*t*t)*cx1 + t*(3*t-2)*cx2
     deval = deval/ds
     return deval
 
@@ -232,7 +233,7 @@ def d2val(ss: float, x: list, xs: list, s: list, n: int):
     t = (ss - s[i-1]) / ds
     cx1 = ds*xs[i-1] - x[i] + x[i-1]
     cx2 = ds*xs[i]   - x[i] + x[i-1]
-    dtwoval = (6.0*t-4.0)*cx1 + (6.0*t-2.0)*cx2
+    dtwoval = (6*t-4)*cx1 + (6*t-2)*cx2
     dtwoval = dtwoval/ds/ds;
     return dtwoval
 
@@ -249,11 +250,11 @@ def d2val(ss: float, x: list, xs: list, s: list, n: int):
 #------------------------------------------------------ */
 def lefind(sle: int, x: list, xp: list, y: list, yp: list, s: list, n: int):
     # convergence tolerance
-    dseps = (s[n]-s[1]) * 0.00001
+    dseps = (s[n]-s[1]) * Decimal("0.00001")
 
     # set trailing edge point coordinates
-    xte = 0.5*(x[1] + x[n])
-    yte = 0.5*(y[1] + y[n])
+    xte = Decimal("0.5")*(x[1] + x[n])
+    yte = Decimal("0.5")*(y[1] + y[n])
 
     # get first guess for sle
     for i in range(3, n - 1):
@@ -290,8 +291,8 @@ def lefind(sle: int, x: list, xp: list, y: list, yp: list, s: list, n: int):
         # newton delta for sle
         dsle = -res/ress
 
-        dsle = max(dsle, -0.02*abs(xchord+ychord))
-        dsle = min(dsle,  0.02*abs(xchord+ychord))
+        dsle = max(dsle, Decimal("-0.02")*abs(xchord+ychord))
+        dsle = min(dsle, Decimal("0.02")* abs(xchord+ychord))
         sle = sle + dsle
         if abs(dsle) < dseps:
           return sle
@@ -322,11 +323,9 @@ def seval(ss: int, x: list, xs: list, s: list, n: int):
 
     ds = s[i] - s[i-1]
     t = (ss - s[i-1]) / ds
-    if xs[i-1] == None:
-        import pdb; pdb.set_trace()
     cx1 = ds*xs[i-1] - x[i] + x[i-1]
     cx2 = ds*xs[i]   - x[i] + x[i-1]
-    return  t*x[i] + (1.0-t)*x[i-1] + (t-t*t)*((1.0-t)*cx1 - t*cx2)
+    return  t*x[i] + (1-t)*x[i-1] + (t-t*t)*((1-t)*cx1 - t*cx2)
 
 
 
@@ -358,6 +357,8 @@ def inter(x0: list, xp0: list, y0: list, yp0: list, s0: list, n0: int, sle0: int
     # interpolation weighting fractions
     f0 = 1.0 - frac
     f1 = frac
+    f0 = Decimal(str(f0))
+    f1 = Decimal(str(f1))
 
     # top side spline parameter increments
     tops0 = s0[1] - sle0
@@ -386,16 +387,8 @@ def inter(x0: list, xp0: list, y0: list, yp0: list, s0: list, n0: int, sle0: int
         # set interpolated x,y coordinates
         x[i] = f0*seval(st0,x0,xp0,s0,n0) + f1*seval(st1,x1,xp1,s1,n1)
         y[i] = f0*seval(st0,y0,yp0,s0,n0) + f1*seval(st1,y1,yp1,s1,n1)
-        print(st0)
         
     return x, y, n
-
-#------------------------------------------------------
-#      sets geometric parameters for airfoil shape
- # ------------------------------------------------------ */
-#def geopar(x: list, xp: list, y: list, yp: list, s: list, n: int, t: list, sle: int, chord: )
-
-
 
 def interpolate(xf1, yf1, n1,
                 xf2, yf2, n2,
@@ -428,7 +421,7 @@ def interpolate(xf1, yf1, n1,
         y2[i+1] = yf2[i]
 
     s1 = scalc(x1,y1,s1,n1)
-    xp1 = segspld(x1,xp1,s1,n1, -999.0, -999.0)
+    xp1 = segspld(x1,xp1,s1,n1, Decimal(-999.0), Decimal(-999.0))
     yp1 = segspld(y1,yp1,s1,n1, -999.0, -999.0)
     sleint1 = lefind(sleint1, x1, xp1, y1, yp1, s1, n1)
 
@@ -440,19 +433,16 @@ def interpolate(xf1, yf1, n1,
     # where is defined xb ?
     xb, yb, nb = inter(x1, xp1, y1, yp1, s1, n1, sleint1, x2, xp2, y2, yp2, s2, n2, sleint2, xb, yb, nb, mixt);
 
-    #sb = scalc(xb,yb,sb,nb)
-    #xbp = segspl(xb,xbp,sb,nb)
-    #ybp = segspl(yb,ybp,sb,nb)
-
     return xb, yb, nb
-    # geopar(xb,xbp,yb,ybp,sb,nb,w1,sble,chordb,areab,radble,angbte, ei11ba,ei22ba,apx1ba,apx2ba,ei11bt,ei22bt,apx1bt,apx2bt)
 
 
 if __name__ == "__main__":
     import sys
     mixt = float(sys.argv[1]) if len(sys.argv) > 1 else 20
     mixt = mixt / 100.0
-    
+
+    getcontext().prec = 18
+
     with open("foil1.dat") as f1, open("foil2.dat") as f2:
           lines = f1.readlines()
           name0 = lines[0].strip()
@@ -460,8 +450,8 @@ if __name__ == "__main__":
           y1 = []
           for i in lines[1:]:
               x, y = i.split()
-              x1.append(float(x))
-              y1.append(float(y))
+              x1.append(Decimal(str(x)))
+              y1.append(Decimal(str(y)))
           n1 = len(x1)
           
           lines = f2.readlines()
@@ -470,14 +460,12 @@ if __name__ == "__main__":
           y2 = []
           for i in lines[1:]:
               x, y = i.split()
-              x2.append(float(x))
-              y2.append(float(y))
+              x2.append(Decimal(str(x)))
+              y2.append(Decimal(str(y)))
           n2 = len(x2)
           
           xb, yb, nb = interpolate(x1, y1, n1, x2, y2, n2, mixt)
           
-          for i in range(nb):
-              print(f"{xb[i+1]:.5f} {yb[i+1]:.5f} ", end="")
           name = f"{name0}-{100-mixt* 100}_{name1}-{mixt*100}"
           with open(f"{name}.dat", "w") as f:
             f.write(f"{name}\n")

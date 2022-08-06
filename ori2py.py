@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import math
 from decimal import Decimal, getcontext
 
 IBX = 302  #< 300 = number of surface panel nodes + 6 
@@ -10,10 +9,11 @@ EPSILON = 1.e-6
 #      calculates the arc length array s  |
 #      for a 2-d array of points (x,y).   |
 # -----------------------------------------
-def scalc(x: list, y: list , s: list, n: int) -> list:
-    s[1] = Decimal("0")
-    for i in range(2, n+1):
-        s[i] = s[i-1] + ((x[i]-x[i-1])**2+(y[i]-y[i-1])**2).sqrt()
+def scalc(x: list, y: list, n: int) -> list:
+    s = []
+    s.append(Decimal("0"))
+    for i in range(1, n):
+        s.append(s[i-1] + ((x[i]-x[i-1])**2+(y[i]-y[i-1])**2).sqrt())
 
     return s
 
@@ -76,7 +76,7 @@ def splind(x: list, xs: list, s: list, n: int, xs1: Decimal, xs2: Decimal):
         print("splind: array overflow, increase nmax")
         return False
 
-    for i in range(2, n):
+    for i in range(1, n-1):
         dsm = s[i] - s[i-1]
         dsp = s[i+1] - s[i]
         b[i] = dsp
@@ -86,39 +86,39 @@ def splind(x: list, xs: list, s: list, n: int, xs1: Decimal, xs2: Decimal):
 
     if xs1 >= 998.0:
         # set zero second derivative end condition
-        a[1] = Decimal("2.0")
-        c[1] = Decimal("1.0")
-        xs[1] = Decimal("3.0")*(x[2]-x[1]) / (s[2]-s[1])
+        a[0] = Decimal("2.0")
+        c[0] = Decimal("1.0")
+        xs[0] = Decimal("3.0")*(x[1]-x[0]) / (s[1]-s[0])
     else:
         if xs1 <= -998.0:
             # set third derivative end condition
-            a[1] = Decimal("1.0")
-            c[1] = Decimal("1.0")
-            xs[1] = Decimal("2.0")*(x[2]-x[1]) / (s[2]-s[1])
+            a[0] = Decimal("1.0")
+            c[0] = Decimal("1.0")
+            xs[0] = Decimal("2.0")*(x[1]-x[0]) / (s[1]-s[0])
         else:
             # set specified first derivative end condition
-            a[1] = Decimal("1.0")
-            c[1] = Decimal("0.0")
-            xs[1] = xs1
+            a[0] = Decimal("1.0")
+            c[0] = Decimal("0.0")
+            xs[0] = xs1
 
     if xs2 >= 998.0:
-        b[n] = Decimal("1.0")
-        a[n] = Decimal("2.0")
-        xs[n] = 3*(x[n]-x[n-1]) / (s[n]-s[n-1])
+        b[n-1] = Decimal("1.0")
+        a[n-1] = Decimal("2.0")
+        xs[n-1] = 3*(x[n-1]-x[n-2]) / (s[n-1]-s[n-2])
     else:
         if xs2 <= -998.0:
-            b[n] = Decimal("1.0")
-            a[n] = Decimal("1.0")
-            xs[n] = 2*(x[n]-x[n-1]) / (s[n]-s[n-1])
+            b[n-1] = Decimal("1.0")
+            a[n-1] = Decimal("1.0")
+            xs[n-1] = 2*(x[n-1]-x[n-2]) / (s[n-1]-s[n-2])
         else:
-            a[n] = Decimal("1.0")
-            b[n] = Decimal("0.0")
-            xs[n] = xs2
+            a[n-1] = Decimal("1.0")
+            b[n-1] = Decimal("0.0")
+            xs[n-1] = xs2
 
-    if n == 2 and xs1 <= -998.0 and xs2 <= -998.0:
-        b[n] = Decimal("1.0")
-        a[n] = Decimal("2.0")
-        xs[n] = 3*(x[n]-x[n-1]) / (s[n]-s[n-1])
+    if n == 1 and xs1 <= -998.0 and xs2 <= -998.0:
+        b[n-1] = Decimal("1.0")
+        a[n-1] = Decimal("2.0")
+        xs[n-1] = 3*(x[n-1]-x[n-2]) / (s[n-1]-s[n-2])
 
     # solve for derivative array xs
     xs = trisol(a, b, c, xs, n)
@@ -163,18 +163,19 @@ def segspl(x: list, xs: list, s: list, n: int):
 #     at segment joints.  segment joints are    |
 #     defined by identical successive s values. |
 #------------------------------------------------
-def segspld(x: list, xs: list, s: Decimal, n: Decimal, xs1: Decimal, xs2: Decimal):
+def segspld(x: list, s: Decimal, n: Decimal, xs1: Decimal, xs2: Decimal):
     nseg = 0
     iseg = 0
     iseg0 = 0
+    xs = []
 
-    if abs(s[1]-s[2]) < EPSILON:
+    if abs(s[0]-s[1]) < EPSILON:
         return False
-    if abs(s[n]-s[n-1]) < EPSILON:
+    if abs(s[n-1]-s[n-2]) < EPSILON:
         return False
 
     iseg0 = 1
-    for iseg in range(2, n+1-2):
+    for iseg in range(1, n-2):
         if abs(s[iseg]-s[iseg+1]) < EPSILON:
             nseg = iseg - iseg0 + 1
             tmp = splind(x[iseg0 - 1:], xs[iseg0 -1:], s[iseg0 - 1:], nseg, xs1, xs2)
@@ -248,16 +249,16 @@ def d2val(ss: float, x: list, xs: list, s: list, n: int):
  #     i.e. the surface tangent is normal to the chord
  #     line connecting x(sle),y(sle) and the te point.
 #------------------------------------------------------ */
-def lefind(sle: int, x: list, xp: list, y: list, yp: list, s: list, n: int):
+def lefind(x: list, xp: list, y: list, yp: list, s: list, n: int):
     # convergence tolerance
-    dseps = (s[n]-s[1]) * Decimal("0.00001")
+    dseps = (s[n-1]-s[0]) * Decimal("0.00001")
 
     # set trailing edge point coordinates
-    xte = Decimal("0.5")*(x[1] + x[n])
-    yte = Decimal("0.5")*(y[1] + y[n])
+    xte = Decimal("0.5")*(x[0] + x[n-1])
+    yte = Decimal("0.5")*(y[0] + y[n-1])
 
     # get first guess for sle
-    for i in range(3, n - 1):
+    for i in range(2, n - 2):
         dxte = x[i] - xte
         dyte = y[i] - yte
         dx = x[i+1] - x[i]
@@ -273,7 +274,7 @@ def lefind(sle: int, x: list, xp: list, y: list, yp: list, s: list, n: int):
       return False
 
     # newton iteration to get exact sle value
-    for iter in range(1, 51):
+    for _ in range(1, 51):
         xle  = seval(sle,x,xp,s,n)
         yle  = seval(sle,y,yp,s,n)
         dxds = deval(sle,x,xp,s,n)
@@ -361,14 +362,14 @@ def inter(x0: list, xp0: list, y0: list, yp0: list, s0: list, n0: int, sle0: int
     f1 = Decimal(str(f1))
 
     # top side spline parameter increments
-    tops0 = s0[1] - sle0
-    tops1 = s1[1] - sle1
+    tops0 = s0[0] - sle0
+    tops1 = s1[0] - sle1
 
     # bottom side spline parameter increments
-    bots0 = s0[n0] - sle0
-    bots1 = s1[n1] - sle1
+    bots0 = s0[n0-1] - sle0
+    bots1 = s1[n1-1] - sle1
 
-    for i in range(1, n+1):
+    for i in range(0, n):
 
         # normalized spline parameter is taken from airfoil 0 value
         if s0[i]< sle0:
@@ -390,47 +391,24 @@ def inter(x0: list, xp0: list, y0: list, yp0: list, s0: list, n0: int, sle0: int
         
     return x, y, n
 
-def interpolate(xf1, yf1, n1,
-                xf2, yf2, n2,
+def interpolate(x1, y1, n1,
+                x2, y2, n2,
                 mixt):
     i = 0
-    x1 = [None for i in range(IBX)]
-    y1 = [None for i in range(IBX)]
-    x2 = [None for i in range(IBX)]
-    y2 = [None for i in range(IBX)]
-    xp1 = [None for i in range(IBX)]
-    yp1 = [None for i in range(IBX)]
-    xp2 = [None for i in range(IBX)]
-    yp2 = [None for i in range(IBX)]
-    s1 = [None for i in range(IBX)]
-    s2 = [None for i in range(IBX)]
-    xb = [None for i in range(IBX)]
-    yb = [None for i in range(IBX)]
-    sb = [None for i in range(IBX)]
-    xbp = [None for i in range(IBX)]
-    ybp = [None for i in range(IBX)]
     nb = IBX
     sleint1=0
     sleint2=0
-    for i in range(n1):
-        x1[i+1] = xf1[i]
-        y1[i+1] = yf1[i]
 
-    for i in range(n2):
-        x2[i+1] = xf2[i]
-        y2[i+1] = yf2[i]
+    s1 = scalc(x1,y1,n1)
+    xp1 = segspld(x1, s1, n1, Decimal("-999.0"), Decimal("-999.0"))
+    yp1 = segspld(y1, s1, n1, Decimal("-999.0"), Decimal("-999.0"))
+    sleint1 = lefind(x1, xp1, y1, yp1, s1, n1)
 
-    s1 = scalc(x1,y1,s1,n1)
-    xp1 = segspld(x1,xp1,s1,n1, Decimal(-999.0), Decimal(-999.0))
-    yp1 = segspld(y1,yp1,s1,n1, -999.0, -999.0)
-    sleint1 = lefind(sleint1, x1, xp1, y1, yp1, s1, n1)
+    s2 = scalc(x2,y2,n2)
+    xp2 = segspld(x2, s2, n2, Decimal("-999.0"), Decimal("-999.0"))
+    yp2 = segspld(y2, s2, n2, Decimal("-999.0"), Decimal("-999.0"))
+    sleint2 = lefind(x2, xp2, y2, yp2, s2, n2)
 
-    s2 = scalc(x2,y2,s2,n2)
-    xp2 = segspld(x2,xp2,s2,n2, -999.0, -999.0)
-    yp2 = segspld(y2,yp2,s2,n2, -999.0, -999.0)
-    sleint2 = lefind(sleint2, x2, xp2, y2, yp2, s2, n2)
-
-    # where is defined xb ?
     xb, yb, nb = inter(x1, xp1, y1, yp1, s1, n1, sleint1, x2, xp2, y2, yp2, s2, n2, sleint2, xb, yb, nb, mixt);
 
     return xb, yb, nb

@@ -30,16 +30,18 @@ def scalc(x: list, y: list, n: int) -> list:
 #     the solution.  a, c are destroyed.  |
 #-----------------------------------------
 def trisol(a: list, b: list, c: list, d: list, kk: int):
-    for k in range(2, kk+1):
+    for k in range(1, kk):
         km = k - 1
         c[km] = c[km] / a[km]
         d[km] = d[km] / a[km]
         a[k] = a[k] - b[k]*c[km]
         d[k] = d[k] - b[k]*d[km]
 
-    d[kk] = d[kk]/a[kk]
+    d[kk-1] = d[kk-1]/a[kk-1]
 
-    for k in range(kk-1, 0):
+    import pdb; pdb.set_trace()
+
+    for k in reversed(range(0, kk-1-1)):
         d[k] = d[k] - c[k]*d[k+1]
 
     return d
@@ -167,7 +169,7 @@ def segspld(x: list, s: Decimal, n: Decimal, xs1: Decimal, xs2: Decimal):
     nseg = 0
     iseg = 0
     iseg0 = 0
-    xs = []
+    xs = [None for i in range(n)]
 
     if abs(s[0]-s[1]) < EPSILON:
         return False

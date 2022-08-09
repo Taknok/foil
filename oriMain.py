@@ -39,8 +39,6 @@ def trisol(a: list, b: list, c: list, d: list, kk: int):
 
     d[kk] = d[kk]/a[kk]
 
-    # import pdb; pdb.set_trace()
-
     for k in reversed(range(1, kk-1)):
         d[k] = d[k] - c[k]*d[k+1]
 

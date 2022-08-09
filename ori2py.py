@@ -2,7 +2,7 @@
 
 from decimal import Decimal, getcontext
 
-IBX = 302  #< 300 = number of surface panel nodes + 6 
+IBX = 302  #< 300 = number of surface panel nodes + 6
 EPSILON = 1.e-6
 
 # -----------------------------------------
@@ -38,8 +38,6 @@ def trisol(a: list, b: list, c: list, d: list, kk: int):
         d[k] = d[k] - b[k]*d[km]
 
     d[kk-1] = d[kk-1]/a[kk-1]
-
-    import pdb; pdb.set_trace()
 
     for k in reversed(range(0, kk-1-1)):
         d[k] = d[k] - c[k]*d[k+1]
@@ -315,7 +313,7 @@ def seval(ss: int, x: list, xs: list, s: list, n: int):
     cx2=0
 
     ilow = 1
-    i = n
+    i = n - 1
 
     while i-ilow > 1:
         imid = int((i+ilow)/2)
@@ -344,7 +342,7 @@ def seval(ss: int, x: list, xs: list, s: list, n: int):
 #        runs from 0 at the leading edge to 1 at the trailing edge on
 #        each surface.
 #     .....................................................................
-def inter(x0: list, xp0: list, y0: list, yp0: list, s0: list, n0: int, sle0: int, x1: list, xp1: list, y1: list, yp1: list, s1: list, n1: int, sle1: int, x: list, y: list, n: int, frac: int):
+def inter(x0: list, xp0: list, y0: list, yp0: list, s0: list, n0: int, sle0: int, x1: list, xp1: list, y1: list, yp1: list, s1: list, n1: int, sle1: int, frac: int):
     f0=0
     f1=0
     tops0=0
@@ -356,6 +354,8 @@ def inter(x0: list, xp0: list, y0: list, yp0: list, s0: list, n0: int, sle0: int
     st1=0
     # number of points in interpolated airfoil is the same as in airfoil 0
     n = n0
+    x = []
+    y = []
 
     # interpolation weighting fractions
     f0 = 1.0 - frac
@@ -388,9 +388,9 @@ def inter(x0: list, xp0: list, y0: list, yp0: list, s0: list, n0: int, sle0: int
             st1 = sle1 + bots1 * sn
 
         # set interpolated x,y coordinates
-        x[i] = f0*seval(st0,x0,xp0,s0,n0) + f1*seval(st1,x1,xp1,s1,n1)
-        y[i] = f0*seval(st0,y0,yp0,s0,n0) + f1*seval(st1,y1,yp1,s1,n1)
-        
+        x.append(f0*seval(st0,x0,xp0,s0,n0) + f1*seval(st1,x1,xp1,s1,n1))
+        y.append(f0*seval(st0,y0,yp0,s0,n0) + f1*seval(st1,y1,yp1,s1,n1))
+
     return x, y, n
 
 def interpolate(x1, y1, n1,
@@ -411,7 +411,7 @@ def interpolate(x1, y1, n1,
     yp2 = segspld(y2, s2, n2, Decimal("-999.0"), Decimal("-999.0"))
     sleint2 = lefind(x2, xp2, y2, yp2, s2, n2)
 
-    xb, yb, nb = inter(x1, xp1, y1, yp1, s1, n1, sleint1, x2, xp2, y2, yp2, s2, n2, sleint2, xb, yb, nb, mixt);
+    xb, yb, nb = inter(x1, xp1, y1, yp1, s1, n1, sleint1, x2, xp2, y2, yp2, s2, n2, sleint2, mixt);
 
     return xb, yb, nb
 
@@ -433,7 +433,7 @@ if __name__ == "__main__":
               x1.append(Decimal(str(x)))
               y1.append(Decimal(str(y)))
           n1 = len(x1)
-          
+
           lines = f2.readlines()
           name1 = lines[0].strip()
           x2 = []
@@ -443,13 +443,13 @@ if __name__ == "__main__":
               x2.append(Decimal(str(x)))
               y2.append(Decimal(str(y)))
           n2 = len(x2)
-          
+
           xb, yb, nb = interpolate(x1, y1, n1, x2, y2, n2, mixt)
-          
+
           name = f"{name0}-{100-mixt* 100}_{name1}-{mixt*100}"
           with open(f"{name}.dat", "w") as f:
             f.write(f"{name}\n")
             for i in range(nb):
-                f.write(f" {xb[i+1]:.5f}    {yb[i+1]:.5f}\n")
+                f.write(f" {xb[i]:.5f}    {yb[i]:.5f}\n")
 
             f.write("\n")
